@@ -198,7 +198,7 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <div class="sub">재생 속도는 맨 위의 '천천히/보통/빠르게'를 따라가요.</div>
 <div id="bgPanel" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
 <b>🎧 목록 전체 반복 듣기</b>
-<div class="sub" style="margin:4px 0">지금 보이는 목록(시트·카테고리)의 문장을 순서대로 반복해서 들려줘요. 고품질 음성(또는 Google 음성)일 때 <b>화면을 꺼도 계속</b> 재생돼요. 위쪽의 <b>한 문장 반복 설정과는 따로</b> 아래의 전체 바퀴 수·쉬는 시간이 적용돼요.</div>
+<div class="sub" style="margin:4px 0">지금 보이는 목록(시트·카테고리)의 문장을 순서대로 반복해서 들려줘요. 고품질 음성(또는 Google 음성)일 때 <b>화면을 꺼도 계속</b> 재생돼요. 위쪽의 <b>한 문장 반복 설정과는 따로</b> 아래의 전체 바퀴 수·쉬는 시간이 적용돼요. <b>🔖 멈춘 곳은 자동으로 기억</b>돼서, 다음에 🎧 시작을 누르면 거기서부터 이어져요. 처음부터 듣고 싶으면 ⏮ 처음부터를 누르세요.</div>
 <div class="bar">
 <label class="lbl">낭독 방식 <select id="rmode"><option value="normal">일반 (문장 통째로)</option><option value="chunk">청크 (끊어서 읽기)</option></select></label>
 <label class="lbl"><input type="checkbox" id="ckColor" checked> 색 청크 표시</label>
@@ -209,6 +209,7 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <label class="lbl">전체 <input id="lloops" type="number" min="1" value="100" style="width:70px">바퀴</label>
 <label class="lbl">쉬는 시간(초) <input id="lgap2" type="number" min="0" step="0.5" value="0.5" style="width:70px"></label>
 <button class="pri" id="bgList">🎧 시작</button>
+<button id="bgFresh">⏮ 처음부터</button>
 <button id="bgPrev">⏮ 앞 문장</button>
 <button id="bgPause">⏸ 일시정지</button>
 <button id="bgNext">⏭ 뒤 문장</button>
@@ -1462,7 +1463,7 @@ function bgProgress(c){
   if(idx<0)idx=c.segs.length-1;
   const n=c.startCount+idx+1,i=c.segs[idx].i;
   bg.played=n;
-  bg.nowI=i;
+  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);
   const d=bg.data[i];
   bgSet("🎧 "+n+" / "+bg.total+"  ·  "+d[1]+(d[2]?"  ("+d[2]+")":""));
   if(bg.mode==="one")setRc(bg.one,"🎧 "+n+" / "+bg.total+" 회 (화면을 꺼도 계속돼요)");
@@ -1591,7 +1592,9 @@ function bgLive(delay){
 $("#bgPause").onclick=()=>bgPauseSet(!bg.userPause);
 $("#bgPrev").onclick=()=>bgSkip(-1);
 $("#bgNext").onclick=()=>bgSkip(1);
-$("#bgList").onclick=()=>startBg("list",-1);
+function bmGet(){const v=store.get("bm_"+SHEETS[curSheet].id,null);return(typeof v==="number"&&D[v])?v:null}
+$("#bgList").onclick=()=>{const b=bmGet();if(b!=null&&list().some(x=>x.i===b)){startBg("list",-1,b)}else startBg("list",-1)};
+$("#bgFresh").onclick=()=>{store.set("bm_"+SHEETS[curSheet].id,null);startBg("list",-1)};
 $("#bgStop").onclick=()=>stopBg();
 
 /* ===== 색 청크 + 청크 낭독 ===== */
