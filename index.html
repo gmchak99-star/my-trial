@@ -47,6 +47,7 @@ body.noWhy .why:not(.rev),body.noKo .ko:not(.rev),body.noEk .ek:not(.rev),body.n
 .hidden{display:none}
 .sheets{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .sheets button{white-space:nowrap;flex:0 0 auto;padding:7px 10px;font-size:13px}
+.card.jumpHi{outline:3px solid #3b82f6;outline-offset:2px}
 .top{position:sticky;top:0;z-index:40;background:var(--bg);padding:4px 0;margin:0 0 6px;border-bottom:1px solid var(--line)}
 .tr{display:flex;gap:4px;align-items:stretch}
 .tr+.tr{margin-top:4px}
@@ -100,9 +101,11 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <select id="hq" style="flex:1.35"></select>
 <select id="voice" style="flex:1.35"></select>
 <select id="rate"style="flex:.95">
+<option value="0.5">아주 천천히</option>
 <option value="0.7">천천히</option>
 <option value="0.9" selected>보통</option>
 <option value="1.05">빠르게</option>
+<option value="1.3">아주 빠르게</option>
 </select>
 <select id="cat" style="flex:1.1"></select>
 <button class="stop" onclick="stopAudio()">⏹</button>
@@ -193,9 +196,9 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <label class="lbl">쉬는 시간(초) <input id="lgap" type="number" min="0" step="0.5" value="0.5" style="width:70px"></label>
 </div>
 <div class="sub">재생 속도는 맨 위의 '천천히/보통/빠르게'를 따라가요.</div>
-<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+<div id="bgPanel" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
 <b>🎧 목록 전체 반복 듣기</b>
-<div class="sub" style="margin:4px 0">지금 보이는 목록(시트·카테고리)의 문장을 순서대로 반복해서 들려줘요. 고품질 음성(또는 Google 음성)일 때 <b>화면을 꺼도 계속</b> 재생돼요. 위의 총 횟수와 쉬는 시간이 그대로 적용돼요.</div>
+<div class="sub" style="margin:4px 0">지금 보이는 목록(시트·카테고리)의 문장을 순서대로 반복해서 들려줘요. 고품질 음성(또는 Google 음성)일 때 <b>화면을 꺼도 계속</b> 재생돼요. 위쪽의 <b>한 문장 반복 설정과는 따로</b> 아래의 전체 바퀴 수·쉬는 시간이 적용돼요. <b>🔖 멈춘 곳은 자동으로 기억</b>돼서, 다음에 🎧 시작을 누르면 거기서부터 이어져요. 처음부터 듣고 싶으면 ⏮ 처음부터를 누르세요.</div>
 <div class="bar">
 <label class="lbl">낭독 방식 <select id="rmode"><option value="normal">일반 (문장 통째로)</option><option value="chunk">청크 (끊어서 읽기)</option></select></label>
 <label class="lbl"><input type="checkbox" id="ckColor" checked> 색 청크 표시</label>
@@ -203,11 +206,15 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <div class="legend"><b style="color:var(--cS)">■ 주어</b><b style="color:var(--cV)">■ 동사</b><b style="color:var(--cO)">■ 목적어·보어</b><b style="color:var(--cM)">■ 장소·시간·수식</b></div>
 <div class="bar" style="margin-top:8px">
 <label class="lbl">문장당 연속 <input id="lrep" type="number" min="1" value="3" style="width:60px">번</label>
+<label class="lbl">전체 <input id="lloops" type="number" min="1" value="100" style="width:70px">바퀴</label>
+<label class="lbl">쉬는 시간(초) <input id="lgap2" type="number" min="0" step="0.5" value="0.5" style="width:70px"></label>
 <button class="pri" id="bgList">🎧 시작</button>
+<button id="bgFresh">⏮ 처음부터</button>
 <button id="bgPrev">⏮ 앞 문장</button>
 <button id="bgPause">⏸ 일시정지</button>
 <button id="bgNext">⏭ 뒤 문장</button>
 <button class="stop" id="bgStop">⏹ 정지</button>
+<button id="bgJump">📍 지금 문장 보기</button>
 <button id="dimBtn">🌙 절전 화면</button>
 </div>
 <div class="big" id="bgStat"></div>
@@ -1140,7 +1147,7 @@ let hideEn=store.get("hideEn",true);
 function cvLabel(card){const b=card.querySelector(".cvBtn");if(b)b.textContent=card.classList.contains("cover")?"👁 영어 보기":"🙈 가리기"}
 function toggleCover(i){const c=document.getElementById("c"+i);if(!c)return;c.classList.toggle("cover");cvLabel(c)}
 function setHideBtn(){$("#hideBtn").textContent=hideEn?"🙈 영어가림":"👁 영어보임"}
-function applyCover(){document.querySelectorAll('#view .card[id^="c"]').forEach(c=>{c.classList.toggle("cover",hideEn);cvLabel(c)})}
+function applyCover(){document.querySelectorAll('#view .card[id^="c"]').forEach(c=>{c.classList.toggle("cover",hideEn);cvLabel(c)});void document.body.offsetHeight}
 $("#hideBtn").onclick=()=>{hideEn=!hideEn;store.set("hideEn",hideEn);setHideBtn();applyCover()};
 function renderStudy(){
   if(typeof loop!=="undefined")stopLoop();
@@ -1163,7 +1170,8 @@ function renderStudy(){
       <button class="pri" onclick="startRepeat(${i})">🔁 반복</button>
       <button class="stop" onclick="stopAudio()">⏹ 정지</button>
       <button onclick="speak(${i})">🎤 따라 말하기</button>
-      <button class="star ${stars.has(i)?"on":""}" onclick="toggleStar(${i},this)">${stars.has(i)?"★":"☆"} 복습</button>${SHEETS[curSheet].id==="mine"?`
+      <button class="star ${stars.has(i)?"on":""}" onclick="toggleStar(${i},this)">${stars.has(i)?"★":"☆"} 복습</button>
+      <button onclick="toPlayer()">⬆ 플레이어로</button>${SHEETS[curSheet].id==="mine"?`
       <button onclick="editMine(${i})">✏️ 수정</button>
       <button onclick="delMine(${i})">🗑 삭제</button>`:""}
     </div>
@@ -1444,6 +1452,10 @@ async function buildMp3(me){
   return c;
 }
 const bgRate=()=>Math.max(0.5,Math.min(2,(+rateSel.value)/0.9));
+rateSel.addEventListener("change",()=>{
+  try{if(bg.run){const r=bgRate();bgEl.defaultPlaybackRate=r;bgEl.playbackRate=r}}catch(e){}
+  try{if(player&&player.src&&!player.paused){const r=Math.max(0.5,Math.min(2,(+rateSel.value)/0.9));player.defaultPlaybackRate=r;player.playbackRate=r}}catch(e){}
+});
 function bgProgress(c){
   if(!bg.run)return;
   const t=bgEl.currentTime;
@@ -1451,6 +1463,7 @@ function bgProgress(c){
   if(idx<0)idx=c.segs.length-1;
   const n=c.startCount+idx+1,i=c.segs[idx].i;
   bg.played=n;
+  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);
   const d=bg.data[i];
   bgSet("🎧 "+n+" / "+bg.total+"  ·  "+d[1]+(d[2]?"  ("+d[2]+")":""));
   if(bg.mode==="one")setRc(bg.one,"🎧 "+n+" / "+bg.total+" 회 (화면을 꺼도 계속돼요)");
@@ -1479,7 +1492,7 @@ function bgMedia(title){
     navigator.mediaSession.setActionHandler("stop",()=>{stopBg()});
   }catch(e){}
 }
-async function startBg(mode,i){
+async function startBg(mode,i,from){
   stopLoop();
   if(typeof stopSpeak==="function")stopSpeak();
   stopSound();
@@ -1490,12 +1503,14 @@ async function startBg(mode,i){
     items=list().map(x=>x.i).filter(k=>canBg(data[k][1]));
     if(!items.length){bgSet("재생할 문장이 없어요. (고품질 음성이 없는 문장은 Google 음성 설정이 필요해요)");return}
   }
-  const g=parseFloat($("#lgap").value);
+  let startPos=0;if(mode==="list"&&from!=null){const q=items.indexOf(from);if(q>=0)startPos=q}
+  const g=parseFloat($(mode==="list"?"#lgap2":"#lgap").value);
   bg.data=data;bg.mode=mode;bg.one=i;bg.items=items;
-  bg.total=Math.max(1,Math.floor(+$("#lcount").value)||1000);
+  bg.rep=Math.max(1,Math.floor(+$("#lrep").value)||1);
+  bg.total=mode==="list"?Math.max(1,Math.floor(+$("#lloops").value)||100)*items.length*bg.rep:Math.max(1,Math.floor(+$("#lcount").value)||1000);
   bg.gap=isNaN(g)?0.5:Math.max(0,g);
   bg.rep=Math.max(1,Math.floor(+$("#lrep").value)||1);
-  bg.userPause=false;bgPauseLbl();bg.pos=0;bg.repLeft=bg.rep;bg.planned=0;bg.played=0;bg.built=0;bg.err=null;
+  bg.userPause=false;bgPauseLbl();bg.pos=startPos;bg.repLeft=bg.rep;bg.planned=0;bg.played=0;bg.built=0;bg.err=null;
   const me=++bg.id;bg.run=true;lockScreen();bg.chunked=($("#rmode").value==="chunk");
   bgSet("🎧 음성 준비 중…");
   if(mode==="one")setRc(i,"🎧 음성 준비 중…");
@@ -1550,10 +1565,36 @@ function bgSkip(dir){
   if(!bg.userPause){bgEl.play().catch(()=>{})}
   bgProgress(c);
 }
+function hdrH(){const t=document.querySelector(".top");return t?t.offsetHeight+8:8}
+function scrollToEl(el){const y=el.getBoundingClientRect().top+window.scrollY-hdrH();window.scrollTo({top:Math.max(0,y),behavior:"smooth"})}
+function toPlayer(){const e=document.getElementById("bgPanel");if(e)scrollToEl(e)}
+function jumpNow(){
+  const i=bg.nowI;
+  if(i==null||!bg.data||bg.data!==D){bgSet("재생 중인 문장이 없어요. 🎧 시작을 먼저 눌러 주세요.");return}
+  const c=document.getElementById("c"+i);
+  if(!c){bgSet("이 화면에는 그 문장이 없어요. '학습' 탭에서 눌러 주세요.");return}
+  scrollToEl(c);c.classList.add("jumpHi");setTimeout(()=>c.classList.remove("jumpHi"),2500);
+}
+$("#bgJump").onclick=jumpNow;
+/* 설정을 바꾸면 재생 중이어도 지금 문장부터 바로 다시 적용 */
+let bgLiveT=null;
+function bgLive(delay){
+  if(!bg.run)return;
+  clearTimeout(bgLiveT);
+  bgLiveT=setTimeout(()=>{
+    if(!bg.run)return;
+    if(bg.mode==="list"&&bg.nowI!=null)startBg("list",-1,bg.nowI);
+    else if(bg.mode==="one")startBg("one",bg.one);
+  },delay||50);
+}
+["rmode","lgap","lgap2","hq","voice"].forEach(id=>{const e=document.getElementById(id);if(e)e.addEventListener("change",()=>bgLive(80))});
+["lrep","lcount","lloops"].forEach(id=>{const e=document.getElementById(id);if(e)e.addEventListener("input",()=>bgLive(900))});
 $("#bgPause").onclick=()=>bgPauseSet(!bg.userPause);
 $("#bgPrev").onclick=()=>bgSkip(-1);
 $("#bgNext").onclick=()=>bgSkip(1);
-$("#bgList").onclick=()=>startBg("list",-1);
+function bmGet(){const v=store.get("bm_"+SHEETS[curSheet].id,null);return(typeof v==="number"&&D[v])?v:null}
+$("#bgList").onclick=()=>{const b=bmGet();if(b!=null&&list().some(x=>x.i===b)){startBg("list",-1,b)}else startBg("list",-1)};
+$("#bgFresh").onclick=()=>{store.set("bm_"+SHEETS[curSheet].id,null);startBg("list",-1)};
 $("#bgStop").onclick=()=>stopBg();
 
 /* ===== 색 청크 + 청크 낭독 ===== */
@@ -2238,6 +2279,7 @@ function setLineBtns(){
   $("#ekBtn").textContent=showEk?"👉 어순":"👉 어순 ✕";
   $("#koBtn").classList.toggle("on",showKo);$("#ekBtn").classList.toggle("on",showEk);
   document.querySelectorAll("#view .rev").forEach(e=>e.classList.remove("rev"));
+  void document.body.offsetHeight;
 }
 $("#koBtn").onclick=()=>{showKo=!showKo;store.set("showKo",showKo);setLineBtns()};
 $("#ekBtn").onclick=()=>{showEk=!showEk;store.set("showEk",showEk);setLineBtns()};
