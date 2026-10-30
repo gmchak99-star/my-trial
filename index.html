@@ -204,6 +204,9 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <div class="bar" style="margin-top:8px">
 <label class="lbl">문장당 연속 <input id="lrep" type="number" min="1" value="3" style="width:60px">번</label>
 <button class="pri" id="bgList">🎧 시작</button>
+<button id="bgPrev">⏮ 앞 문장</button>
+<button id="bgPause">⏸ 일시정지</button>
+<button id="bgNext">⏭ 뒤 문장</button>
 <button class="stop" id="bgStop">⏹ 정지</button>
 <button id="dimBtn">🌙 절전 화면</button>
 </div>
@@ -1454,7 +1457,7 @@ function bgProgress(c){
 }
 function playChunk(c){
   return new Promise(res=>{
-    bg.resolve=res;
+    bg.resolve=res;bg.cur=c;
     bgEl.onended=()=>{bg.resolve=null;res(true)};
     bgEl.onerror=()=>{bg.resolve=null;res(false)};
     bgEl.ontimeupdate=()=>bgProgress(c);
@@ -1469,8 +1472,10 @@ function bgMedia(title){
   if(!("mediaSession" in navigator))return;
   try{
     navigator.mediaSession.metadata=new MediaMetadata({title:title,artist:"1형식 영어 연습"});
-    navigator.mediaSession.setActionHandler("play",()=>{bgEl.play()});
-    navigator.mediaSession.setActionHandler("pause",()=>{bgEl.pause()});
+    navigator.mediaSession.setActionHandler("play",()=>{bgPauseSet(false)});
+    navigator.mediaSession.setActionHandler("pause",()=>{bgPauseSet(true)});
+    navigator.mediaSession.setActionHandler("previoustrack",()=>{bgSkip(-1)});
+    navigator.mediaSession.setActionHandler("nexttrack",()=>{bgSkip(1)});
     navigator.mediaSession.setActionHandler("stop",()=>{stopBg()});
   }catch(e){}
 }
@@ -1490,7 +1495,7 @@ async function startBg(mode,i){
   bg.total=Math.max(1,Math.floor(+$("#lcount").value)||1000);
   bg.gap=isNaN(g)?0.5:Math.max(0,g);
   bg.rep=Math.max(1,Math.floor(+$("#lrep").value)||1);
-  bg.pos=0;bg.repLeft=bg.rep;bg.planned=0;bg.played=0;bg.built=0;bg.err=null;
+  bg.userPause=false;bgPauseLbl();bg.pos=0;bg.repLeft=bg.rep;bg.planned=0;bg.played=0;bg.built=0;bg.err=null;
   const me=++bg.id;bg.run=true;lockScreen();bg.chunked=($("#rmode").value==="chunk");
   bgSet("🎧 음성 준비 중…");
   if(mode==="one")setRc(i,"🎧 음성 준비 중…");
@@ -1518,13 +1523,36 @@ async function startBg(mode,i){
 }
 function stopBg(silent){
   if(!bg.run)return;
-  bg.run=false;bg.id++;if(!dimOn)unlockScreen();
+  bg.run=false;bg.id++;bg.userPause=false;bgPauseLbl();if(!dimOn)unlockScreen();
   try{bgEl.pause()}catch(e){}
   if(bg.resolve){const r=bg.resolve;bg.resolve=null;r(true)}
   bg.urls.forEach(u=>URL.revokeObjectURL(u));bg.urls=[];
   if(bg.mode==="one")setRc(bg.one,"⏹ 정지 · "+bg.played+"번 들었어요");
   if(!silent)bgSet("⏹ 정지 · "+bg.played+"번 들었어요");
 }
+function bgPauseLbl(){const b=document.getElementById("bgPause");if(b)b.textContent=bg.userPause?"▶ 이어서":"⏸ 일시정지"}
+function bgPauseSet(p){
+  if(!bg.run)return;
+  bg.userPause=p;bgPauseLbl();
+  if(p){try{bgEl.pause()}catch(e){}bgSet("⏸ 일시정지 · "+((document.getElementById("bgStat")||{}).textContent||"").replace(/^⏸ 일시정지 · /,""))}
+  else{bgEl.play().catch(()=>{});const c=bg.cur;if(c)bgProgress(c)}
+}
+function bgSkip(dir){
+  if(!bg.run||bg.mode!=="list"||!bg.cur)return;
+  const c=bg.cur,S=c.segs,t=bgEl.currentTime;
+  let idx=S.findIndex(x=>t>=x.t0&&t<x.t1);if(idx<0)idx=S.length-1;
+  const cur=S[idx].i;let s=idx;while(s>0&&S[s-1].i===cur)s--;
+  let target;
+  if(dir>0){let j=idx;while(j<S.length&&S[j].i===cur)j++;target=j>=S.length?bgEl.duration:S[j].t0}
+  else if(s===0||t-S[s].t0>2){target=S[s].t0}
+  else{let q=s-1;while(q>0&&S[q-1].i===S[q].i)q--;target=S[q].t0}
+  try{bgEl.currentTime=target>=bgEl.duration?bgEl.duration:target+0.01}catch(e){}
+  if(!bg.userPause){bgEl.play().catch(()=>{})}
+  bgProgress(c);
+}
+$("#bgPause").onclick=()=>bgPauseSet(!bg.userPause);
+$("#bgPrev").onclick=()=>bgSkip(-1);
+$("#bgNext").onclick=()=>bgSkip(1);
 $("#bgList").onclick=()=>startBg("list",-1);
 $("#bgStop").onclick=()=>stopBg();
 
