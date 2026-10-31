@@ -1481,7 +1481,9 @@ function bgProgress(c){
   bg.played=n;
   bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);
   const d=bg.data[i];
-  bgSet("🎧 "+n+" / "+bg.total+"  ·  "+d[1]+(d[2]?"  ("+d[2]+")":"")+(linkOn&&EL[d[1]]?"  🔗 "+EL[d[1]]:""));
+  const ekt=((typeof showEk==="undefined"||showEk)&&EK[d[1]])?"  👉 "+EK[d[1]].replace(/[\[\]]/g,"").replace(/\s*→\s*/g,"  ·  "):"";
+  const kot=((typeof showKo==="undefined"||showKo)&&d[2])?"  ("+d[2]+")":"";
+  bgSet("🎧 "+n+" / "+bg.total+"  ·  "+d[1]+ekt+kot+(linkOn&&EL[d[1]]?"  🔗 "+EL[d[1]]:""));
   if(bg.mode==="one")setRc(bg.one,"🎧 "+n+" / "+bg.total+" 회 (화면을 꺼도 계속돼요)");
 }
 function playChunk(c){
@@ -1575,8 +1577,12 @@ function bgSkip(dir){
   const cur=S[idx].i;let s=idx;while(s>0&&S[s-1].i===cur)s--;
   let target;
   if(dir>0){let j=idx;while(j<S.length&&S[j].i===cur)j++;target=j>=S.length?bgEl.duration:S[j].t0}
-  else if(s===0||t-S[s].t0>2){target=S[s].t0}
-  else{let q=s-1;while(q>0&&S[q-1].i===S[q].i)q--;target=S[q].t0}
+  else if(s>0){let q=s-1;while(q>0&&S[q-1].i===S[q].i)q--;target=S[q].t0}
+  else{
+    const L=bg.items,p=L.indexOf(cur);
+    if(p>=0&&L.length>1){const prev=L[(p-1+L.length)%L.length];startBg("list",-1,prev);return}
+    target=S[s].t0
+  }
   try{bgEl.currentTime=target>=bgEl.duration?bgEl.duration:target+0.01}catch(e){}
   if(!bg.userPause){bgEl.play().catch(()=>{})}
   bgProgress(c);
