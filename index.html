@@ -101,6 +101,11 @@ details.how summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0
 .cg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
 .cg>button,.cg>label{height:34px;padding:0 2px;font-size:13px;border-radius:8px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;margin:0}
 .cg>label{border:1px solid var(--line);background:var(--card);color:var(--sub)}
+.crow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:4px}
+.crow.first{margin-top:8px}
+.crow.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.crow.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.crow button{height:30px;padding:0 2px;font-size:12px;border-radius:7px;white-space:nowrap;min-width:0;overflow:hidden}
 .cg>label input{width:42px;height:26px;padding:0 2px;font-size:13px;text-align:center;border-radius:6px}
 </style>
 </head>
@@ -1212,7 +1217,7 @@ function list(){
 const norm=s=>s.toLowerCase().replace(/[^a-z' ]/g,"").replace(/\s+/g," ").trim();
 
 let hideEn=store.get("hideEn",true);
-function cvLabel(card){const b=card.querySelector(".cvBtn");if(b)b.textContent=card.classList.contains("cover")?"👁 영어 보기":"🙈 가리기"}
+function cvLabel(card){const b=card.querySelector(".cvBtn");if(b)b.textContent=card.classList.contains("cover")?"👁 영문":"🙈 가림"}
 function toggleCover(i){const c=document.getElementById("c"+i);if(!c)return;c.classList.toggle("cover");cvLabel(c)}
 function setHideBtn(){$("#hideBtn").textContent=hideEn?"🙈 영어가림":"👁 영어보임"}
 function applyCover(){document.querySelectorAll('#view .card[id^="c"]').forEach(c=>{c.classList.toggle("cover",hideEn);cvLabel(c)});void document.body.offsetHeight}
@@ -1231,19 +1236,23 @@ function renderStudy(){
     ${EW[d[1]]?`<div class="why">🔎 ${EW[d[1]]}</div>`:""}
     ${wdHtml(d[1])}${simHtml(d[1])}
     ${d[3]?`<div class="tip">💡 ${d[3]}</div>`:""}
-    <div class="row">
-      <button class="cvBtn" onclick="toggleCover(${i})">${hideEn?"👁 영어 보기":"🙈 가리기"}</button>
+    <div class="crow first">
+      <button class="cvBtn" onclick="toggleCover(${i})">${hideEn?"👁 영문":"🙈 가림"}</button>
       <button onclick="say(D[${i}][1])">🔊 듣기</button>
-      <button onclick="say(D[${i}][1],0.6)">🐢 느리게</button>
-      <button onclick="playChunked(${i})">✂️ 청크 듣기</button>
+      <button onclick="say(D[${i}][1],0.6)">🐢 느림</button>
+      <button onclick="playChunked(${i})">✂️ 청크</button>
       <button class="pri" onclick="startRepeat(${i})">🔁 반복</button>
-      <button class="stop" onclick="stopAudio()">⏹ 정지</button>
-      <button onclick="speak(${i})">🎤 따라 말하기</button>
-      <button class="star ${stars.has(i)?"on":""}" onclick="toggleStar(${i},this)">${stars.has(i)?"★":"☆"} 복습</button>
-      <button onclick="toPlayer()">⬆ 플레이어로</button>${SHEETS[curSheet].id==="mine"?`
-      <button onclick="editMine(${i})">✏️ 수정</button>
-      <button onclick="delMine(${i})">🗑 삭제</button>`:""}
     </div>
+    <div class="crow c4">
+      <button class="stop" onclick="stopAudio()">⏹ 정지</button>
+      <button onclick="speak(${i})">🎤 말하기</button>
+      <button class="star ${stars.has(i)?"on":""}" onclick="toggleStar(${i},this)">${stars.has(i)?"★":"☆"} 복습</button>
+      <button onclick="toPlayer()">⬆ 플레이어</button>
+    </div>${SHEETS[curSheet].id==="mine"?`
+    <div class="crow c2">
+      <button onclick="editMine(${i})">✏️ 수정</button>
+      <button onclick="delMine(${i})">🗑 삭제</button>
+    </div>`:""}
     <div class="big" id="rc${i}"></div>
     <div class="heard" id="heard${i}"></div>
   </div>`).join("");
@@ -1268,7 +1277,7 @@ function speak(i){
     cue(miss.length?"bad":"ok");
     const cov=document.getElementById("c"+i);
     const hidden=cov&&cov.classList.contains("cover");
-    out.innerHTML=`들린 문장: <b>${heard}</b><br>`+(miss.length?(hidden?`<span class="bad">${miss.length}개 단어가 달라요. 👁 영어 보기를 눌러 확인해 보세요.</span>`:`<span class="bad">빠지거나 다르게 들린 단어: ${miss.join(", ")}</span>`):`<span class="ok">✅ 정확해요!</span>`);
+    out.innerHTML=`들린 문장: <b>${heard}</b><br>`+(miss.length?(hidden?`<span class="bad">${miss.length}개 단어가 달라요. 👁 영문을 눌러 확인해 보세요.</span>`:`<span class="bad">빠지거나 다르게 들린 단어: ${miss.join(", ")}</span>`):`<span class="ok">✅ 정확해요!</span>`);
   };
   r.onerror=()=>{cue("bad");out.textContent="인식에 실패했어요. 마이크 권한을 확인하고 다시 해보세요."};
   cue("listen");
