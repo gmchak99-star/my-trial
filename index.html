@@ -81,15 +81,37 @@ textarea.sum{width:100%;height:110px;font:inherit;font-size:13px;padding:8px;bor
 .ok2{color:var(--ok)}.bad2{color:var(--bad)}
 button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 .heard{font-size:14px;margin-top:6px}
+
+/* ===== UI 개편 v4 ===== */
+.tabs{gap:5px;margin:8px 0}
+.tabs button{height:34px;padding:0 1px;font-size:13px;white-space:nowrap;border-radius:8px}
+#shUI{margin:8px 0}
+.shr{display:flex;gap:5px;margin-bottom:5px}
+.shT{flex:1 1 0;min-width:0;height:34px;padding:0 2px;font-size:13px;border-radius:8px;white-space:nowrap}
+.shRow{display:flex;gap:5px}
+.shRow .shS{flex:1 1 0;min-width:0;height:42px;padding:0 2px;font-size:13px;line-height:1.2;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;white-space:nowrap}
+.shS small{font-size:11px;color:var(--sub)}
+.shGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.shGrid .shS{height:34px;padding:0 10px;font-size:13px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;white-space:nowrap;overflow:hidden}
+.shGrid .shS span:first-child{overflow:hidden;text-overflow:ellipsis}
+.shGrid .n{color:var(--sub);font-size:12px;margin-left:6px;flex:none}
+.shS.on{background:rgba(59,108,246,.14);border-color:var(--main);color:var(--main)}
+.shS.on small,.shS.on .n{color:var(--main)}
+details.how summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0}
+.cg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
+.cg>button,.cg>label{height:34px;padding:0 2px;font-size:13px;border-radius:8px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;margin:0}
+.cg>label{border:1px solid var(--line);background:var(--card);color:var(--sub)}
+.cg>label input{width:42px;height:26px;padding:0 2px;font-size:13px;text-align:center;border-radius:6px}
 </style>
 </head>
 <body>
 <div id="flash"></div>
 <div class="wrap">
-<h1>1형식 영어 연습 🎧</h1>
+<h1 id="ttl">1형식 영어 연습 🎧</h1>
 <div class="sub">주어 + 동사 (+ 전치사 / 부사). 듣고, 따라 말하고, 순서 맞추기까지.</div>
 
-<div class="sheets" id="sheets"></div>
+<div class="sheets" id="sheets" style="display:none"></div>
+<div id="shUI"><div class="shr" id="shG1"></div><div class="shr" id="shG2"></div><div id="shSub"></div></div>
 
 <div class="tabs">
 <button id="t1" class="on">학습</button>
@@ -192,34 +214,39 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 <div class="heard" id="gstat"></div>
 </details>
 
-<div class="card" id="lset">
-<b>🔁 문장 반복 설정</b>
+<div id="lset">
+<details class="card" id="lrepset">
+<summary><b>🔁 문장 반복 설정</b></summary>
 <div class="sub" style="margin:6px 0">각 문장의 <b>🔁 반복</b> 버튼을 누르면 그 문장 하나를 계속 반복해요. <b>⏹ 정지</b>로 멈춰요. 쉬는 시간 동안 소리 내어 따라 말하세요.</div>
 <div class="bar">
 <label class="lbl">반복 횟수 <input id="lcount" type="number" min="1" value="1000" style="width:90px"></label>
 <label class="lbl">쉬는 시간(초) <input id="lgap" type="number" min="0" step="0.5" value="0.5" style="width:70px"></label>
 </div>
 <div class="sub">재생 속도는 맨 위의 '천천히/보통/빠르게'를 따라가요.</div>
-<div id="bgPanel" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
+</details>
+<div class="card" id="bgPanel">
 <b>🎧 목록 전체 반복 듣기</b>
+<details class="how"><summary>사용 방법</summary>
 <div class="sub" style="margin:4px 0">지금 보이는 목록(시트·카테고리)의 문장을 순서대로 반복해서 들려줘요. 고품질 음성(또는 Google 음성)일 때 <b>화면을 꺼도 계속</b> 재생돼요. 위쪽의 <b>한 문장 반복 설정과는 따로</b> 아래의 전체 바퀴 수·쉬는 시간이 적용돼요. <b>🔖 멈춘 곳은 자동으로 기억</b>돼서, 다음에 🎧 시작을 누르면 거기서부터 이어져요. 처음부터 듣고 싶으면 ⏮ 처음부터를 누르세요.</div>
+</details>
 <div class="bar">
 <label class="lbl">낭독 방식 <select id="rmode"><option value="normal">일반 (문장 통째로)</option><option value="chunk">청크 (끊어서 읽기)</option></select></label>
 <label class="lbl"><input type="checkbox" id="ckColor" checked> 색 청크 표시</label>
 </div>
 <div class="legend"><b style="color:var(--cS)">■ 주어</b><b style="color:var(--cV)">■ 동사</b><b style="color:var(--cO)">■ 목적어·보어</b><b style="color:var(--cM)">■ 장소·시간·수식</b></div>
-<div class="bar" style="margin-top:8px">
-<label class="lbl">문장당 연속 <input id="lrep" type="number" min="1" value="3" style="width:60px">번</label>
-<label class="lbl">전체 <input id="lloops" type="number" min="1" value="100" style="width:70px">바퀴</label>
-<label class="lbl">쉬는 시간(초) <input id="lgap2" type="number" min="0" step="0.5" value="0.5" style="width:70px"></label>
+<div class="cg">
+<label class="lbl">문장 <input id="lrep" type="number" min="1" value="3"> 번</label>
+<label class="lbl">총 <input id="lloops" type="number" min="1" value="100"> 번</label>
+<label class="lbl">쉼 <input id="lgap2" type="number" min="0" step="0.5" value="0.5"> 초</label>
 <button class="pri" id="bgList">🎧 시작</button>
+<button class="stop" id="bgStop">⏹ 정지</button>
 <button id="bgFresh">⏮ 처음부터</button>
 <button id="bgPrev">⏮ 앞 문장</button>
 <button id="bgPause">⏸ 일시정지</button>
 <button id="bgNext">⏭ 뒤 문장</button>
-<button class="stop" id="bgStop">⏹ 정지</button>
-<button id="bgJump">📍 지금 문장 보기</button>
+<button id="bgJump">📍 지금 문장</button>
 <button id="dimBtn">🌙 절전 화면</button>
+<button class="star" id="bgRv">☆ 복습 저장</button>
 </div>
 <div class="big" id="bgStat"></div>
 <div class="sub">🌙 절전 화면: 화면을 까맣게 덮어 배터리를 아끼면서 <b>화면이 자동으로 꺼지지 않게</b> 유지해요. 화면을 톡 누르면 돌아와요.</div>
@@ -1051,8 +1078,37 @@ function setSheet(n){
   const cats=[...new Set(D.map(d=>d[0]))];
   catSel.innerHTML=`<option value="">전체 (${D.length})</option>`+cats.map(c=>`<option>${c}</option>`).join("");
   sheetsEl.querySelectorAll("button").forEach((b,k)=>b.classList.toggle("on",k===n));
+  if(window.shRefresh)shRefresh();
 }
 SHEETS.forEach((sh,k)=>{const b=document.createElement("button");b.textContent=sh.name+" ("+sh.data.length+")";b.onclick=()=>{setSheet(k);render()};sheetsEl.appendChild(b)});
+
+/* ===== 시트 선택 UI (형식 탭 + 유형 칸) ===== */
+(function(){
+const G1=["1형식","2형식","3형식","4형식","5형식"],G2=["구동사","컬컴·기타","기본동사","내 예문"];
+function info(sh){const n=sh.name;let m;
+ if(sh.id==="mine"||n==="내 예문")return{g:"내 예문",s:"내 예문"};
+ if(m=n.match(/^([1-5]형식)\s+(.+)$/))return{g:m[1],s:m[2]};
+ if(m=n.match(/^구동사\s+(.+)$/))return{g:"구동사",s:m[1]};
+ if(m=n.match(/^기본동사\s+(.+)$/))return{g:"기본동사",s:m[1]};
+ return{g:"컬컴·기타",s:n}}
+const gs={};SHEETS.forEach((sh,k)=>{const f=info(sh);(gs[f.g]=gs[f.g]||[]).push({k,s:f.s})});
+function mk(cls,html,fn,on){const b=document.createElement("button");b.type="button";b.className=cls+(on?" on":"");b.innerHTML=html;b.onclick=fn;return b}
+window.shRefresh=function(){
+ const cur=info(SHEETS[curSheet]).g;
+ const last=store.get("shLast",{})||{};last[cur]=curSheet;store.set("shLast",last);
+ const r1=$("#shG1"),r2=$("#shG2"),sub=$("#shSub");
+ if(!r1||!r2||!sub)return;
+ r1.innerHTML="";r2.innerHTML="";sub.innerHTML="";
+ const go=g=>{const L=gs[g];if(!L)return;const lk=last[g];const k=(lk!=null&&L.some(x=>x.k===lk))?lk:L[0].k;setSheet(k);render()};
+ G1.forEach(g=>{if(gs[g])r1.appendChild(mk("shT",g,()=>go(g),g===cur))});
+ G2.forEach(g=>{if(gs[g])r2.appendChild(mk("shT",g,()=>go(g),g===cur))});
+ const row=/형식$/.test(cur);
+ sub.className=row?"shRow":"shGrid";
+ (gs[cur]||[]).forEach(x=>{const n=SHEETS[x.k].data.length;
+  sub.appendChild(mk("shS",row?x.s+"<small>"+n+"</small>":"<span>"+x.s+'</span><span class="n">'+n+"</span>",()=>{setSheet(x.k);render()},x.k===curSheet))});
+ const t=$("#ttl");if(t)t.textContent=SHEETS[curSheet].name+" · "+SHEETS[curSheet].data.length+"문장 🎧";
+};
+})();
 
 function loadVoices(){
   const score=v=>(/natural|online|neural|premium|enhanced|siri|google/i.test(v.name)?10:0)+(/en[-_]US/i.test(v.lang)?3:0)+(v.localService?0:1);
@@ -1197,6 +1253,7 @@ function toggleStar(i,b){
   saveStars();
   b.classList.toggle("on");b.textContent=stars.has(i)?"★ 복습":"☆ 복습";
   if(tab===3)renderStudy();
+  try{rvLbl()}catch(e){}
 }
 function speak(i){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -1261,6 +1318,7 @@ function render(){
   if(typeof sp!=="undefined")stopSpeak();
   $("#lset").classList.toggle("hidden",tab===4||tab===5);
   document.querySelectorAll(".tabs button").forEach((b,n)=>b.classList.toggle("on",n+1===tab));
+  try{rvLbl()}catch(e){}
   tab===2?newQ():tab===4?renderSpeak():tab===5?renderDrill():renderStudy();
 }
 $("#t1").onclick=()=>{tab=1;render()};
@@ -1479,7 +1537,7 @@ function bgProgress(c){
   if(idx<0)idx=c.segs.length-1;
   const n=c.startCount+idx+1,i=c.segs[idx].i;
   bg.played=n;
-  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);
+  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);rvLbl();
   const d=bg.data[i];
   const ekt=((typeof showEk==="undefined"||showEk)&&EK[d[1]])?"  👉 "+EK[d[1]].replace(/[\[\]]/g,"").replace(/\s*→\s*/g,"  ·  "):"";
   const kot=((typeof showKo==="undefined"||showKo)&&d[2])?"  ("+d[2]+")":"";
@@ -1598,6 +1656,13 @@ function jumpNow(){
   scrollToEl(c);c.classList.add("jumpHi");setTimeout(()=>c.classList.remove("jumpHi"),2500);
 }
 $("#bgJump").onclick=jumpNow;
+function rvLbl(){const b=document.getElementById("bgRv");if(!b)return;const i=(bg.nowI!=null&&bg.data===D)?bg.nowI:null;const on=i!=null&&stars.has(i);b.classList.toggle("on",on);b.textContent=on?"★ 저장됨":"☆ 복습 저장"}
+$("#bgRv").onclick=()=>{const i=bg.nowI;
+ if(i==null||bg.data!==D||!D[i]){bgSet("저장할 문장이 없어요. 🎧 시작을 누른 뒤 눌러 주세요.");return}
+ const b=document.querySelector("#c"+i+" .star");
+ if(b)toggleStar(i,b);else{stars.has(i)?stars.delete(i):stars.add(i);saveStars();if(tab===3)renderStudy()}
+ rvLbl();
+};
 /* 설정을 바꾸면 재생 중이어도 지금 문장부터 바로 다시 적용 */
 let bgLiveT=null;
 function bgLive(delay){
@@ -1723,7 +1788,7 @@ $("#noteCopy").onclick=async()=>{
 let editIdx=-1;
 const mineIdx=()=>SHEETS.findIndex(s=>s.id==="mine");
 const saveMine=()=>store.set("mine",SHEETS[mineIdx()].data);
-function updateSheetLabels(){sheetsEl.querySelectorAll("button").forEach((b,k)=>{b.textContent=SHEETS[k].name+" ("+SHEETS[k].data.length+")"})}
+function updateSheetLabels(){sheetsEl.querySelectorAll("button").forEach((b,k)=>{b.textContent=SHEETS[k].name+" ("+SHEETS[k].data.length+")"});if(window.shRefresh)shRefresh()}
 function addMsg(t){$("#addMsg").textContent=t}
 function parseLines(txt){
   const out=[];
