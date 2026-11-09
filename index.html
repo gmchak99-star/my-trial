@@ -99,14 +99,26 @@ button.stop{background:var(--bad);border-color:var(--bad);color:#fff}
 .shS.on small,.shS.on .n{color:var(--main)}
 details.how summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0}
 .cg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}
-.cg>button,.cg>label{height:34px;padding:0 2px;font-size:13px;border-radius:8px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;margin:0}
+.cg>button,.cg>label{height:28px;padding:0 2px;font-size:13px;border-radius:8px;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;margin:0}
 .cg>label{border:1px solid var(--line);background:var(--card);color:var(--sub)}
+#lset:not(.hidden){display:contents}
+#bgPanel{position:sticky;top:var(--topH,100px);z-index:35;padding:6px 8px 4px;margin-bottom:8px;max-height:calc(100vh - var(--topH,100px) - 12px);overflow:auto;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+#bgPanel .big{font-size:13px;font-weight:500;line-height:1.4;margin-top:6px}
+#bgPanel.min .pt,#bgPanel.min details.how,#bgPanel.min>.bar,#bgPanel.min .legend,#bgPanel.min .cg>label,#bgPanel.min #bgFresh,#bgPanel.min #dimBtn,#bgPanel.min>.sub{display:none}
+#bgPanel.min .cg{grid-template-columns:repeat(7,minmax(0,1fr));margin-top:0}
+#bgPanel.min .cg .tx{display:none}
+#bgPanel.min .cg>button{font-size:16px}
+#bgPanel.min .big{font-size:12px;margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#bgPanel.stuck .pt,#bgPanel.stuck details.how{display:none}
+#pinHandle{text-align:center;font-size:11px;color:var(--sub);cursor:pointer;padding:3px 0 0}
+#bgJump.pz{border-color:var(--main);box-shadow:0 0 0 2px rgba(59,108,246,.35)}
+.card.bgNow{outline:2px solid var(--main);outline-offset:0}
 .crow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:4px}
 .crow.first{margin-top:8px}
 .crow.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .crow.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.crow button{height:30px;padding:0 2px;font-size:12px;border-radius:7px;white-space:nowrap;min-width:0;overflow:hidden}
-.cg>label input{width:42px;height:26px;padding:0 2px;font-size:13px;text-align:center;border-radius:6px}
+.crow button{height:28px;padding:0 2px;font-size:12px;border-radius:7px;white-space:nowrap;min-width:0;overflow:hidden}
+.cg>label input{width:42px;height:22px;padding:0 2px;font-size:13px;text-align:center;border-radius:6px}
 </style>
 </head>
 <body>
@@ -229,32 +241,35 @@ details.how summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0
 </div>
 <div class="sub">재생 속도는 맨 위의 '천천히/보통/빠르게'를 따라가요.</div>
 </details>
-<div class="card" id="bgPanel">
-<b>🎧 목록 전체 반복 듣기</b>
+<div id="bgAnchor"></div>
+<div class="card min" id="bgPanel">
+<b class="pt">🎧 목록 전체 반복 듣기</b>
 <details class="how"><summary>사용 방법</summary>
 <div class="sub" style="margin:4px 0">지금 보이는 목록(시트·카테고리)의 문장을 순서대로 반복해서 들려줘요. 고품질 음성(또는 Google 음성)일 때 <b>화면을 꺼도 계속</b> 재생돼요. 위쪽의 <b>한 문장 반복 설정과는 따로</b> 아래의 전체 바퀴 수·쉬는 시간이 적용돼요. <b>🔖 멈춘 곳은 자동으로 기억</b>돼서, 다음에 🎧 시작을 누르면 거기서부터 이어져요. 처음부터 듣고 싶으면 ⏮ 처음부터를 누르세요.</div>
 </details>
 <div class="bar">
 <label class="lbl">낭독 방식 <select id="rmode"><option value="normal">일반 (문장 통째로)</option><option value="chunk">청크 (끊어서 읽기)</option></select></label>
 <label class="lbl"><input type="checkbox" id="ckColor" checked> 색 청크 표시</label>
+<label class="lbl"><input type="checkbox" id="ckFollow" checked> 따라가기</label>
 </div>
 <div class="legend"><b style="color:var(--cS)">■ 주어</b><b style="color:var(--cV)">■ 동사</b><b style="color:var(--cO)">■ 목적어·보어</b><b style="color:var(--cM)">■ 장소·시간·수식</b></div>
 <div class="cg">
 <label class="lbl">문장 <input id="lrep" type="number" min="1" value="3"> 번</label>
 <label class="lbl">총 <input id="lloops" type="number" min="1" value="100"> 번</label>
 <label class="lbl">쉼 <input id="lgap2" type="number" min="0" step="0.5" value="0.5"> 초</label>
-<button class="pri" id="bgList">🎧 시작</button>
-<button class="stop" id="bgStop">⏹ 정지</button>
-<button id="bgFresh">⏮ 처음부터</button>
-<button id="bgPrev">⏮ 앞 문장</button>
-<button id="bgPause">⏸ 일시정지</button>
-<button id="bgNext">⏭ 뒤 문장</button>
-<button id="bgJump">📍 지금 문장</button>
-<button id="dimBtn">🌙 절전 화면</button>
-<button class="star" id="bgRv">☆ 복습 저장</button>
+<button class="pri" id="bgList"><span class="ic">🎧</span><span class="tx"> 시작</span></button>
+<button class="stop" id="bgStop"><span class="ic">⏹</span><span class="tx"> 정지</span></button>
+<button id="bgFresh"><span class="ic">⏮</span><span class="tx"> 처음부터</span></button>
+<button id="bgPrev"><span class="ic">⏮</span><span class="tx"> 앞 문장</span></button>
+<button id="bgPause"><span class="ic">⏸</span><span class="tx"> 일시정지</span></button>
+<button id="bgNext"><span class="ic">⏭</span><span class="tx"> 뒤 문장</span></button>
+<button id="bgJump"><span class="ic">📍</span><span class="tx"> 지금 문장</span></button>
+<button id="dimBtn"><span class="ic">🌙</span><span class="tx"> 절전 화면</span></button>
+<button class="star" id="bgRv"><span class="ic">☆</span><span class="tx"> 복습 저장</span></button>
 </div>
 <div class="big" id="bgStat"></div>
 <div class="sub">🌙 절전 화면: 화면을 까맣게 덮어 배터리를 아끼면서 <b>화면이 자동으로 꺼지지 않게</b> 유지해요. 화면을 톡 누르면 돌아와요.</div>
+<div id="pinHandle">▼ 펼치기</div>
 </div>
 </div>
 
@@ -1546,7 +1561,7 @@ function bgProgress(c){
   if(idx<0)idx=c.segs.length-1;
   const n=c.startCount+idx+1,i=c.segs[idx].i;
   bg.played=n;
-  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);rvLbl();
+  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);rvLbl();followNow();
   const d=bg.data[i];
   const ekt=((typeof showEk==="undefined"||showEk)&&EK[d[1]])?"  👉 "+EK[d[1]].replace(/[\[\]]/g,"").replace(/\s*→\s*/g,"  ·  "):"";
   const kot=((typeof showKo==="undefined"||showKo)&&d[2])?"  ("+d[2]+")":"";
@@ -1577,7 +1592,7 @@ function bgMedia(title){
     navigator.mediaSession.setActionHandler("stop",()=>{stopBg()});
   }catch(e){}
 }
-async function startBg(mode,i,from){
+async function startBg(mode,i,from){lastFollowI=-1;followPz=false;try{pzLbl()}catch(e){}
   stopLoop();
   if(typeof stopSpeak==="function")stopSpeak();
   stopSound();
@@ -1630,7 +1645,7 @@ function stopBg(silent){
   if(bg.mode==="one")setRc(bg.one,"⏹ 정지 · "+bg.played+"번 들었어요");
   if(!silent)bgSet("⏹ 정지 · "+bg.played+"번 들었어요");
 }
-function bgPauseLbl(){const b=document.getElementById("bgPause");if(b)b.textContent=bg.userPause?"▶ 이어서":"⏸ 일시정지"}
+function bgPauseLbl(){const b=document.getElementById("bgPause");if(b)b.innerHTML=bg.userPause?'<span class="ic">▶</span><span class="tx"> 이어서</span>':'<span class="ic">⏸</span><span class="tx"> 일시정지</span>'}
 function bgPauseSet(p){
   if(!bg.run)return;
   bg.userPause=p;bgPauseLbl();
@@ -1655,17 +1670,48 @@ function bgSkip(dir){
   bgProgress(c);
 }
 function hdrH(){const t=document.querySelector(".top");return t?t.offsetHeight+8:8}
-function scrollToEl(el){const y=el.getBoundingClientRect().top+window.scrollY-hdrH();window.scrollTo({top:Math.max(0,y),behavior:"smooth"})}
-function toPlayer(){const e=document.getElementById("bgPanel");if(e)scrollToEl(e)}
+function pinH(){const p=document.getElementById("bgPanel");return(p&&p.offsetParent!==null)?p.offsetHeight+6:0}
+function scrollToEl(el){const ex=(el.id==="bgAnchor")?0:pinH();const y=el.getBoundingClientRect().top+window.scrollY-hdrH()-ex;window.scrollTo({top:Math.max(0,y),behavior:"smooth"})}
+function toPlayer(){const e=document.getElementById("bgAnchor")||document.getElementById("bgPanel");if(e)scrollToEl(e)}
 function jumpNow(){
   const i=bg.nowI;
   if(i==null||!bg.data||bg.data!==D){bgSet("재생 중인 문장이 없어요. 🎧 시작을 먼저 눌러 주세요.");return}
   const c=document.getElementById("c"+i);
   if(!c){bgSet("이 화면에는 그 문장이 없어요. '학습' 탭에서 눌러 주세요.");return}
-  scrollToEl(c);c.classList.add("jumpHi");setTimeout(()=>c.classList.remove("jumpHi"),2500);
+  followPz=false;lastFollowI=i;pzLbl();scrollToEl(c);c.classList.add("jumpHi");setTimeout(()=>c.classList.remove("jumpHi"),2500);
+}
+
+/* ===== 고정 패널 높이 / 접기 / 재생 문장 따라가기 ===== */
+let followOn=store.get("follow",true),followPz=false,lastFollowI=-1;
+(function(){
+ const top=document.querySelector(".top");
+ function setTopH(){if(top)document.documentElement.style.setProperty("--topH",top.offsetHeight+"px")}
+ setTopH();window.addEventListener("resize",setTopH);
+ if(window.ResizeObserver&&top)new ResizeObserver(setTopH).observe(top);
+ const P=document.getElementById("bgPanel"),H=document.getElementById("pinHandle");
+ function setMin(m){P.classList.toggle("min",m);H.textContent=m?"▼ 펼치기":"▲ 접기";store.set("pinMin",m)}
+ setMin(store.get("pinMin",true));
+ H.onclick=()=>setMin(!P.classList.contains("min"));
+ const A=document.getElementById("bgAnchor");
+ function chkStuck(){P.classList.toggle("stuck",A.getBoundingClientRect().top<(top?top.offsetHeight:0)-1)}
+ window.addEventListener("scroll",chkStuck,{passive:true});chkStuck();
+ const ck=document.getElementById("ckFollow");
+ ck.checked=followOn;
+ ck.onchange=()=>{followOn=ck.checked;store.set("follow",followOn);followPz=false;lastFollowI=-1;pzLbl();if(followOn)followNow(true)};
+ ["touchmove","wheel"].forEach(ev=>window.addEventListener(ev,()=>{if(bg.run&&followOn&&!followPz){followPz=true;pzLbl()}},{passive:true}));
+})();
+function pzLbl(){const b=document.getElementById("bgJump");if(b)b.classList.toggle("pz",!!(bg.run&&followOn&&followPz))}
+function followNow(force){
+ const i=bg.nowI;if(i==null||bg.data!==D)return;
+ const c=document.getElementById("c"+i);
+ document.querySelectorAll(".bgNow").forEach(x=>{if(x!==c)x.classList.remove("bgNow")});
+ if(!c)return;c.classList.add("bgNow");
+ if(!followOn||(followPz&&!force))return;
+ if(i===lastFollowI&&!force)return;
+ lastFollowI=i;scrollToEl(c);
 }
 $("#bgJump").onclick=jumpNow;
-function rvLbl(){const b=document.getElementById("bgRv");if(!b)return;const i=(bg.nowI!=null&&bg.data===D)?bg.nowI:null;const on=i!=null&&stars.has(i);b.classList.toggle("on",on);b.textContent=on?"★ 저장됨":"☆ 복습 저장"}
+function rvLbl(){const b=document.getElementById("bgRv");if(!b)return;const i=(bg.nowI!=null&&bg.data===D)?bg.nowI:null;const on=i!=null&&stars.has(i);b.classList.toggle("on",on);b.innerHTML=on?'<span class="ic">★</span><span class="tx"> 저장됨</span>':'<span class="ic">☆</span><span class="tx"> 복습 저장</span>'}
 $("#bgRv").onclick=()=>{const i=bg.nowI;
  if(i==null||bg.data!==D||!D[i]){bgSet("저장할 문장이 없어요. 🎧 시작을 누른 뒤 눌러 주세요.");return}
  const b=document.querySelector("#c"+i+" .star");
