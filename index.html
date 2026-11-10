@@ -1561,7 +1561,7 @@ function bgProgress(c){
   if(idx<0)idx=c.segs.length-1;
   const n=c.startCount+idx+1,i=c.segs[idx].i;
   bg.played=n;
-  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);rvLbl();followNow();
+  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);try{rvLbl();followNow()}catch(e){}
   const d=bg.data[i];
   const ekt=((typeof showEk==="undefined"||showEk)&&EK[d[1]])?"  👉 "+EK[d[1]].replace(/[\[\]]/g,"").replace(/\s*→\s*/g,"  ·  "):"";
   const kot=((typeof showKo==="undefined"||showKo)&&d[2])?"  ("+d[2]+")":"";
@@ -1658,7 +1658,11 @@ function bgSkip(dir){
   let idx=S.findIndex(x=>t>=x.t0&&t<x.t1);if(idx<0)idx=S.length-1;
   const cur=S[idx].i;let s=idx;while(s>0&&S[s-1].i===cur)s--;
   let target;
-  if(dir>0){let j=idx;while(j<S.length&&S[j].i===cur)j++;target=j>=S.length?bgEl.duration:S[j].t0}
+  if(dir>0){let j=idx;while(j<S.length&&S[j].i===cur)j++;
+    if(j>=S.length){const L=bg.items,p=L.indexOf(cur);
+      if(p>=0&&p<L.length-1){startBg("list",-1,L[p+1]);return}
+      target=bgEl.duration}
+    else target=S[j].t0}
   else if(s>0){let q=s-1;while(q>0&&S[q-1].i===S[q].i)q--;target=S[q].t0}
   else{
     const L=bg.items,p=L.indexOf(cur);
