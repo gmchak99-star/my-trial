@@ -125,6 +125,7 @@ details.how summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0
 <div id="flash"></div>
 <div class="wrap">
 <h1 id="ttl">1형식 영어 연습 🎧</h1>
+<div class="sub" id="syTop" style="display:none;margin:-4px 0 6px;font-size:11px"></div>
 <div class="sub">주어 + 동사 (+ 전치사 / 부사). 듣고, 따라 말하고, 순서 맞추기까지.</div>
 
 <div class="sheets" id="sheets" style="display:none"></div>
@@ -191,6 +192,25 @@ details.how summary{font-size:13px;color:var(--sub);cursor:pointer;padding:4px 0
 <div class="big" id="addMsg"></div>
 <div class="sub">입력한 예문은 <b>내 예문</b> 시트에 저장돼요. 이 폰(브라우저)에만 저장되니, 브라우저 데이터를 지우면 사라져요.</div>
 </div>
+
+<details class="card" id="syset">
+<summary><b>☁️ 기기 간 동기화</b> <span class="sub" id="syBadge" style="margin-left:4px"></span></summary>
+<div class="sub" style="margin:8px 0">복습 저장 · 메모 · 내 예문 · 이어 듣기 위치를 비공개 GitHub 저장소로 컴퓨터와 폰이 같이 써요. Google 음성 키와 토큰은 올라가지 않아요.</div>
+<div class="bar"><input id="syRepo" placeholder="저장소 이름 (예: gmchak99-star/my-data)" autocomplete="off" style="flex:1;min-width:200px;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)"></div>
+<div class="bar"><input id="syTok" type="password" placeholder="접근 토큰 (이 기기에만 저장돼요)" autocomplete="off" style="flex:1;min-width:200px;font:inherit;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)"></div>
+<div class="row">
+<button class="pri" id="syTest">🔌 연결 테스트</button>
+<button id="syNow">🔄 지금 동기화</button>
+</div>
+<label class="sub" style="display:block;margin:8px 0"><input type="checkbox" id="syOn"> 자동 동기화 (저장할 때, 앱을 열 때)</label>
+<div class="heard" id="syStat">아직 연결 전이에요</div>
+<div class="row">
+<button id="syExp">⬇️ 백업 내보내기</button>
+<button id="syImp">⬆️ 백업 가져오기</button>
+<button id="syOff">연결 끊기</button>
+</div>
+<textarea id="syBox" class="hidden" rows="4" style="width:100%;margin-top:8px;font:12px monospace;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)"></textarea>
+</details>
 
 <details class="card" id="fxset">
 <summary><b>📳 진동 · 효과음 · 화면 신호 설정</b></summary>
@@ -1091,10 +1111,10 @@ SHEETS.push({id:"mine",name:"내 예문",data:store.get("mine",[])});
 let curSheet=store.get("sheet",0); if(!SHEETS[curSheet])curSheet=0;
 let stars=new Set();
 const sheetsEl=$("#sheets");
-function saveStars(){store.set("stars_"+SHEETS[curSheet].id,[...stars])}
+
 function setSheet(n){
   curSheet=n;store.set("sheet",n);D=SHEETS[n].data;
-  stars=new Set(store.get("stars_"+SHEETS[n].id,[]));
+  stars=loadStars(n);
   const cats=[...new Set(D.map(d=>d[0]))];
   catSel.innerHTML=`<option value="">전체 (${D.length})</option>`+cats.map(c=>`<option>${c}</option>`).join("");
   sheetsEl.querySelectorAll("button").forEach((b,k)=>b.classList.toggle("on",k===n));
@@ -1561,7 +1581,7 @@ function bgProgress(c){
   if(idx<0)idx=c.segs.length-1;
   const n=c.startCount+idx+1,i=c.segs[idx].i;
   bg.played=n;
-  bg.nowI=i;if(bg.mode==="list"&&bg.data===D)store.set("bm_"+SHEETS[curSheet].id,i);try{rvLbl();followNow()}catch(e){}
+  bg.nowI=i;if(bg.mode==="list"&&bg.data===D){const _b="bm_"+SHEETS[curSheet].id;if(store.get(_b,null)!==i){store.set(_b,i);store.set("bmU_"+SHEETS[curSheet].id,Date.now())}}try{rvLbl();followNow()}catch(e){}
   const d=bg.data[i];
   const ekt=((typeof showEk==="undefined"||showEk)&&EK[d[1]])?"  👉 "+EK[d[1]].replace(/[\[\]]/g,"").replace(/\s*→\s*/g,"  ·  "):"";
   const kot=((typeof showKo==="undefined"||showKo)&&d[2])?"  ("+d[2]+")":"";
@@ -1740,7 +1760,7 @@ $("#bgPrev").onclick=()=>bgSkip(-1);
 $("#bgNext").onclick=()=>bgSkip(1);
 function bmGet(){const v=store.get("bm_"+SHEETS[curSheet].id,null);return(typeof v==="number"&&D[v])?v:null}
 $("#bgList").onclick=()=>{const b=bmGet();if(b!=null&&list().some(x=>x.i===b)){startBg("list",-1,b)}else startBg("list",-1)};
-$("#bgFresh").onclick=()=>{store.set("bm_"+SHEETS[curSheet].id,null);startBg("list",-1)};
+$("#bgFresh").onclick=()=>{store.set("bm_"+SHEETS[curSheet].id,null);store.set("bmU_"+SHEETS[curSheet].id,Date.now());startBg("list",-1)};
 $("#bgStop").onclick=()=>stopBg();
 
 /* ===== 색 청크 + 청크 낭독 ===== */
@@ -1813,7 +1833,7 @@ $("#rmode").onchange=e=>store.set("rmode",e.target.value);
 
 /* ===== 메모장 ===== */
 let notes=store.get("notes",[]);
-const saveNotes=()=>store.set("notes",notes);
+
 function renderNotes(){
   const box=$("#noteList");
   if(!notes.length){box.innerHTML='<div class="sub" style="margin-top:8px">아직 메모가 없어요.</div>';return}
@@ -1846,7 +1866,7 @@ $("#noteCopy").onclick=async()=>{
 /* ===== 내 예문 입력 ===== */
 let editIdx=-1;
 const mineIdx=()=>SHEETS.findIndex(s=>s.id==="mine");
-const saveMine=()=>store.set("mine",SHEETS[mineIdx()].data);
+
 function updateSheetLabels(){sheetsEl.querySelectorAll("button").forEach((b,k)=>{b.textContent=SHEETS[k].name+" ("+SHEETS[k].data.length+")"});if(window.shRefresh)shRefresh()}
 function addMsg(t){$("#addMsg").textContent=t}
 function parseLines(txt){
@@ -1924,6 +1944,286 @@ function delMine(i){
 }
 
 /* ===== 진동 · 효과음 · 화면 신호 ===== */
+/* ===== 기기 간 동기화 + 문장 기준 저장 ===== */
+function starsMapOf(k){
+  const sh=SHEETS[k],id=sh.id;let M=store.get("starsM_"+id,null);
+  if(M&&typeof M==="object"&&!Array.isArray(M))return M;
+  M={};const old=store.get("stars_"+id,[]);
+  (Array.isArray(old)?old:[]).forEach(i=>{const d=sh.data[i];if(d)M[d[1]]=[1,1]});
+  store.set("starsM_"+id,M);return M;
+}
+function loadStars(k){
+  const M=starsMapOf(k),s=new Set();
+  SHEETS[k].data.forEach((d,i)=>{const e=M[d[1]];if(e&&e[0])s.add(i)});
+  return s;
+}
+function saveStars(){
+  const k=curSheet,id=SHEETS[k].id;
+  store.set("stars_"+id,[...stars]);
+  const M=starsMapOf(k),now=Date.now(),cur=new Set();
+  stars.forEach(i=>{if(D[i])cur.add(D[i][1])});
+  D.forEach(d=>{const t=d[1],e=M[t],on=cur.has(t);
+    if(on&&!(e&&e[0]))M[t]=[1,now];else if(!on&&e&&e[0])M[t]=[0,now]});
+  if(id==="mine"){const have=new Set(D.map(d=>d[1]));Object.keys(M).forEach(t=>{if(M[t][0]&&!have.has(t))M[t]=[0,now]})}
+  store.set("starsM_"+id,M);
+  try{syncDirty()}catch(e){}
+}
+function noteHash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return "L"+(h>>>0).toString(36)}
+function noteNorm(){
+  const now=Date.now(),pv=store.get("notes",[])||[],pm={},tomb=store.get("notesTomb",{})||{};
+  pv.forEach(p=>{if(p.id)pm[p.id]=p});
+  const pl=new Set(pv.filter(p=>!p.id).map(p=>p.d+"|"+p.t));
+  notes.forEach(n=>{
+    if(!n.id){
+      if(pl.has(n.d+"|"+n.t)){n.id=noteHash(n.d+"|"+n.t);n.u=n.u||1}
+      else{n.id="N"+now.toString(36)+Math.random().toString(36).slice(2,6);n.u=now}
+    }else{
+      const p=pm[n.id];
+      if(p&&(p.t!==n.t||!!p.done!==!!n.done))n.u=now;
+      if(!n.u)n.u=1;
+    }
+  });
+  const cur=new Set(notes.map(n=>n.id));
+  pv.forEach(p=>{const id=p.id||noteHash(p.d+"|"+p.t);if(!cur.has(id))tomb[id]=now});
+  const lim=now-120*864e5;Object.keys(tomb).forEach(k=>{if(tomb[k]<lim)delete tomb[k]});
+  store.set("notesTomb",tomb);
+}
+function saveNotes(){
+  try{noteNorm()}catch(e){}
+  store.set("notes",notes);
+  try{syncDirty()}catch(e){}
+}
+function mineNorm(rows){
+  const now=Date.now(),prev=store.get("mine",[])||[],meta=store.get("mineMeta",{})||{},pm={},cur={};
+  prev.forEach(r=>{pm[r[1]]=JSON.stringify(r)});
+  rows.forEach(r=>{const k=r[1],js=JSON.stringify(r),m=meta[k];cur[k]=1;
+    if(!m)meta[k]={u:(k in pm&&pm[k]===js)?1:now,del:0};
+    else if(m.del)meta[k]={u:now,del:0};
+    else if(pm[k]!==js)m.u=now});
+  prev.forEach(r=>{const k=r[1];if(!(k in cur))meta[k]={u:now,del:1}});
+  store.set("mineMeta",meta);
+}
+function saveMine(){
+  const rows=SHEETS[mineIdx()].data;
+  try{mineNorm(rows)}catch(e){}
+  store.set("mine",rows);
+  try{syncDirty()}catch(e){}
+}
+
+function buildSnap(){
+  const S={v:1,stars:{},notes:[],notesTomb:{},mine:{},bm:{}};
+  SHEETS.forEach((sh,k)=>{const M=starsMapOf(k);if(Object.keys(M).length)S.stars[sh.id]=M});
+  noteNorm();store.set("notes",notes);
+  S.notes=notes.map(n=>({id:n.id,t:n.t,d:n.d,done:!!n.done,u:n.u||1}));
+  S.notesTomb=store.get("notesTomb",{})||{};
+  const rows=SHEETS[mineIdx()].data;mineNorm(rows);
+  const meta=store.get("mineMeta",{})||{},byK={};rows.forEach(r=>{byK[r[1]]=r});
+  Object.keys(meta).forEach(k=>{const m=meta[k];
+    if(m.del)S.mine[k]={del:1,u:m.u};
+    else if(byK[k])S.mine[k]={row:byK[k],u:m.u,del:0}});
+  SHEETS.forEach(sh=>{const u=store.get("bmU_"+sh.id,0);if(!u)return;
+    const v=store.get("bm_"+sh.id,null);
+    S.bm[sh.id]={t:(typeof v==="number"&&sh.data[v])?sh.data[v][1]:null,u:u}});
+  return S;
+}
+function mergeSnap(A,B){
+  B=B||{};
+  const M={v:1,stars:{},notes:[],notesTomb:{},mine:{},bm:{}};
+  const sa=A.stars||{},sb=B.stars||{};
+  new Set([...Object.keys(sa),...Object.keys(sb)]).forEach(id=>{
+    const a=sa[id]||{},b=sb[id]||{},o={};
+    new Set([...Object.keys(a),...Object.keys(b)]).forEach(t=>{
+      const x=a[t],y=b[t];
+      if(!x)o[t]=y;else if(!y)o[t]=x;
+      else o[t]=(x[1]>y[1]||(x[1]===y[1]&&x[0]>=y[0]))?x:y});
+    M.stars[id]=o});
+  const ta=A.notesTomb||{},tb=B.notesTomb||{};
+  new Set([...Object.keys(ta),...Object.keys(tb)]).forEach(k=>{M.notesTomb[k]=Math.max(ta[k]||0,tb[k]||0)});
+  const map={};
+  (A.notes||[]).forEach(n=>{map[n.id]=n});
+  (B.notes||[]).forEach(n=>{const m=map[n.id];if(!m||(n.u||0)>(m.u||0))map[n.id]=n});
+  const seen=new Set();
+  const push=n=>{if(seen.has(n.id))return;seen.add(n.id);
+    const w=map[n.id],tm=M.notesTomb[n.id];
+    if(tm&&tm>=(w.u||0))return;M.notes.push(w)};
+  (A.notes||[]).forEach(push);
+  (B.notes||[]).slice().sort((x,y)=>(y.u||0)-(x.u||0)).forEach(push);
+  const ma=A.mine||{},mb=B.mine||{};
+  new Set([...Object.keys(ma),...Object.keys(mb)]).forEach(k=>{
+    const x=ma[k],y=mb[k];M.mine[k]=!x?y:!y?x:((y.u||0)>(x.u||0)?y:x)});
+  const ba=A.bm||{},bb=B.bm||{};
+  new Set([...Object.keys(ba),...Object.keys(bb)]).forEach(id=>{
+    const x=ba[id],y=bb[id];M.bm[id]=!x?y:!y?x:((y.u||0)>(x.u||0)?y:x)});
+  return M;
+}
+function syCanon(S){
+  const c=JSON.parse(JSON.stringify(S));delete c.ts;
+  c.notes=(c.notes||[]).slice().sort((a,b)=>a.id<b.id?-1:1);
+  return JSON.stringify(c,(k,v)=>{
+    if(v&&typeof v==="object"&&!Array.isArray(v)){const o={};Object.keys(v).sort().forEach(x=>{o[x]=v[x]});return o}
+    return v});
+}
+function applySnap(M){
+  Object.keys(M.stars||{}).forEach(id=>{
+    const k=SHEETS.findIndex(s=>s.id===id);if(k<0)return;
+    store.set("starsM_"+id,M.stars[id]);
+    store.set("stars_"+id,[...loadStars(k)])});
+  notes.length=0;
+  (M.notes||[]).forEach(n=>{notes.push({id:n.id,t:n.t,d:n.d,done:!!n.done,u:n.u})});
+  store.set("notes",notes);store.set("notesTomb",M.notesTomb||{});
+  const mk=mineIdx(),rows=SHEETS[mk].data,have=new Set(),keep=[],meta={};
+  rows.forEach(r=>{have.add(r[1]);const e=(M.mine||{})[r[1]];
+    if(e&&e.del)return;keep.push(e&&e.row?e.row:r)});
+  Object.keys(M.mine||{}).map(k=>[k,M.mine[k]]).filter(x=>!have.has(x[0])&&!x[1].del&&x[1].row)
+    .sort((a,b)=>(b[1].u||0)-(a[1].u||0)).forEach(x=>keep.push(x[1].row));
+  rows.length=0;keep.forEach(r=>rows.push(r));
+  Object.keys(M.mine||{}).forEach(k=>{meta[k]={u:M.mine[k].u||0,del:M.mine[k].del?1:0}});
+  store.set("mine",rows);store.set("mineMeta",meta);
+  Object.keys(M.bm||{}).forEach(id=>{
+    const sh=SHEETS.find(s=>s.id===id);if(!sh)return;
+    const e=M.bm[id],lu=store.get("bmU_"+id,0);if((e.u||0)<=lu)return;
+    if(bg.run&&SHEETS[curSheet].id===id)return;
+    if(e.t==null)store.set("bm_"+id,null);
+    else{const i=sh.data.findIndex(d=>d[1]===e.t);if(i<0)return;store.set("bm_"+id,i)}
+    store.set("bmU_"+id,e.u)});
+  stars=loadStars(curSheet);
+  try{updateSheetLabels()}catch(e){}
+  try{renderNotes()}catch(e){}
+  try{render()}catch(e){}
+  try{rvLbl()}catch(e){}
+}
+
+const SY={busy:false,again:false,t:null,checked:false,last:store.get("sy_last",0)};
+function syCfg(){return{repo:(store.get("sy_repo","")||"").trim(),tok:(store.get("sy_tok","")||"").trim(),on:store.get("sy_on",true)}}
+function syErr(code){const e=new Error(code);e.code=code;return e}
+function syMsg(e){
+  const m={
+    auth:"토큰이 맞지 않아요. 토큰을 다시 확인해 주세요. (만료됐을 수도 있어요)",
+    repo:"저장소를 못 찾았어요. 이름(예: gmchak99-star/my-data)과 토큰의 저장소 권한을 확인해 주세요.",
+    perm:"권한이 부족해요. 토큰의 Contents 권한을 Read and write로 해 주세요.",
+    public:"공개 저장소예요! 기록이 노출되니 Private(비공개)로 바꿔 주세요. 동기화를 멈췄어요.",
+    ver:"이 앱이 더 오래된 버전이에요. 새로고침 후 다시 시도해 주세요.",
+    conflict:"다른 기기와 동시에 저장되어 충돌했어요. 잠시 뒤 다시 시도해 주세요."
+  };
+  if(e&&m[e.code])return m[e.code];
+  if(e&&e.name==="TypeError")return "인터넷 연결을 확인해 주세요. 연결되면 다시 시도해요.";
+  return "동기화 실패: "+(e&&(e.code||e.message)||"알 수 없는 오류");
+}
+function b64e(s){const b=new TextEncoder().encode(s);let x="";for(let i=0;i<b.length;i+=0x8000)x+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(x)}
+function b64d(s){const x=atob(String(s).replace(/\s/g,""));const b=new Uint8Array(x.length);for(let i=0;i<x.length;i++)b[i]=x.charCodeAt(i);return new TextDecoder().decode(b)}
+function gh(path,opt){
+  const c=syCfg();opt=opt||{};
+  const h={"Authorization":"Bearer "+c.tok,"Accept":"application/vnd.github+json"};
+  if(opt.body)h["Content-Type"]="application/json";
+  return fetch("https://api.github.com/repos/"+c.repo+path,{method:opt.method||"GET",cache:"no-store",headers:h,body:opt.body?JSON.stringify(opt.body):undefined});
+}
+async function syRepoCheck(){
+  const r=await gh("");
+  if(r.status===401)throw syErr("auth");
+  if(r.status===404||r.status===403)throw syErr("repo");
+  if(!r.ok)throw syErr("http"+r.status);
+  const j=await r.json();
+  if(!j.private)throw syErr("public");
+  SY.checked=true;return j;
+}
+async function syGet(){
+  const r=await gh("/contents/data.json?_="+Date.now());
+  if(r.status===404){await syRepoCheck();return{snap:null,sha:null}}
+  if(r.status===401)throw syErr("auth");
+  if(r.status===403)throw syErr("perm");
+  if(!r.ok)throw syErr("http"+r.status);
+  const j=await r.json();
+  const txt=j.content?b64d(j.content):"";
+  return{snap:txt?JSON.parse(txt):null,sha:j.sha};
+}
+async function syPut(M,sha){
+  const body={message:"sync "+new Date().toISOString().slice(0,16).replace("T"," "),content:b64e(JSON.stringify(M))};
+  if(sha)body.sha=sha;
+  const r=await gh("/contents/data.json",{method:"PUT",body:body});
+  if(r.status===409||r.status===422)return "conflict";
+  if(r.status===401)throw syErr("auth");
+  if(r.status===403||r.status===404)throw syErr("perm");
+  if(!r.ok)throw syErr("http"+r.status);
+  return "ok";
+}
+function syHM(t){return new Date(t).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",hour12:false})}
+function syStat(cls,text){
+  const e=$("#syStat");if(e){e.textContent=text;e.style.color=cls==="err"?"var(--bad)":cls==="ok"?"var(--ok)":""}
+  const c=syCfg(),on=!!(c.repo&&c.tok);
+  const b=$("#syBadge");if(b)b.textContent=!on?"":cls==="ok"?"· 동기화됨 "+syHM(SY.last):cls==="err"?"· 확인 필요":"· …";
+  const t=$("#syTop");if(t){t.style.display=on?"":"none";t.textContent=cls==="ok"?"☁️ 동기화됨 "+syHM(SY.last):cls==="err"?"☁️ 동기화 확인 필요":"☁️ 동기화 중…"}
+}
+async function syncNow(manual){
+  const c=syCfg();
+  if(!c.repo||!c.tok){if(manual)syStat("err","저장소 이름과 토큰을 먼저 입력해 주세요.");return}
+  if(!c.on&&!manual)return;
+  if(SY.busy){SY.again=true;return}
+  SY.busy=true;syStat("n","동기화 중…");
+  let ok=false,M=null;
+  try{
+    if(!SY.checked)await syRepoCheck();
+    if(!store.get("syncBak",null))store.set("syncBak",buildSnap());
+    for(let tr=0;tr<3&&!ok;tr++){
+      const L=buildSnap(),R=await syGet();
+      if(R.snap&&R.snap.v>1)throw syErr("ver");
+      M=mergeSnap(L,R.snap);
+      if(syCanon(M)!==syCanon(L))applySnap(M);
+      if(!R.snap||syCanon(M)!==syCanon(R.snap)){
+        M.ts=Date.now();
+        if(await syPut(M,R.sha)==="conflict")continue;
+      }
+      ok=true;
+    }
+    if(!ok)throw syErr("conflict");
+    SY.last=Date.now();store.set("sy_last",SY.last);
+    let ns=0;Object.keys(M.stars||{}).forEach(id=>{Object.keys(M.stars[id]).forEach(t=>{if(M.stars[id][t][0])ns++})});
+    const nm=Object.keys(M.mine||{}).filter(k=>!M.mine[k].del).length;
+    syStat("ok","동기화됨 · "+syHM(SY.last)+" · 복습 "+ns+" · 메모 "+(M.notes||[]).length+" · 내 예문 "+nm);
+  }catch(e){syStat("err",syMsg(e))}
+  finally{SY.busy=false;if(SY.again){SY.again=false;syncDirty()}}
+}
+function syncDirty(){
+  const c=syCfg();if(!c.repo||!c.tok||!c.on)return;
+  clearTimeout(SY.t);SY.t=setTimeout(()=>{syncNow(false)},4000);
+}
+(function(){
+  const rp=$("#syRepo"),tk=$("#syTok"),on=$("#syOn"),box=$("#syBox");
+  if(!rp)return;
+  rp.value=store.get("sy_repo","");tk.value=store.get("sy_tok","");on.checked=store.get("sy_on",true);
+  const save=()=>{store.set("sy_repo",rp.value.trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"").replace(/\/$/,""));store.set("sy_tok",tk.value.trim());SY.checked=false;rp.value=store.get("sy_repo","")};
+  on.onchange=()=>{store.set("sy_on",on.checked);if(on.checked)syncNow(false)};
+  $("#syTest").onclick=async()=>{
+    save();const c=syCfg();
+    if(!c.repo||!c.tok){syStat("err","저장소 이름과 토큰을 먼저 입력해 주세요.");return}
+    syStat("n","연결 확인 중…");
+    try{const j=await syRepoCheck();const r=await gh("/contents/data.json?_="+Date.now());
+      if(r.status!==404&&!r.ok)throw syErr(r.status===401?"auth":"http"+r.status);
+      syStat("ok","연결됨 · "+j.full_name+" (비공개) · '지금 동기화'를 눌러 보세요")}
+    catch(e){syStat("err",syMsg(e))}
+  };
+  $("#syNow").onclick=()=>{save();syncNow(true)};
+  $("#syExp").onclick=async()=>{
+    const s=JSON.stringify(buildSnap());box.classList.remove("hidden");box.value=s;
+    try{await navigator.clipboard.writeText(s);syStat("ok","백업을 복사했어요. 메모장 등에 붙여 넣어 보관하세요.")}
+    catch(e){box.select();syStat("n","자동 복사가 안 돼요. 아래 글자를 길게 눌러 복사해 주세요.")}
+  };
+  $("#syImp").onclick=()=>{
+    if(box.classList.contains("hidden")||!box.value.trim()){box.classList.remove("hidden");box.value="";box.placeholder="백업 글자를 여기에 붙여 넣고 '백업 가져오기'를 다시 눌러 주세요.";box.focus();return}
+    try{
+      const S=JSON.parse(box.value);if(!S||S.v!==1)throw new Error("형식이 달라요");
+      const M=mergeSnap(buildSnap(),S);applySnap(M);box.value="";box.classList.add("hidden");
+      syStat("ok","백업을 합쳤어요.");syncDirty();
+    }catch(e){syStat("err","백업 글자를 읽지 못했어요: "+e.message)}
+  };
+  $("#syOff").onclick=()=>{if(!confirm("이 기기의 동기화 연결을 끊을까요? (저장된 기록은 그대로 남아요)"))return;
+    store.set("sy_tok","");store.set("sy_repo","");tk.value="";rp.value="";syStat("n","연결을 끊었어요.");};
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"){if(Date.now()-SY.last>20000)syncNow(false)}
+    else syncNow(false)});
+  window.addEventListener("online",()=>syncNow(false));
+  const c=syCfg();
+  if(c.repo&&c.tok){syStat("n","동기화 준비 중…");if(SY.last){const b=$("#syBadge");if(b)b.textContent="· 마지막 "+syHM(SY.last)}setTimeout(()=>syncNow(false),1500)}
+})();
 const fx={vib:store.get("fx_vib",true),snd:store.get("fx_snd",true),vis:store.get("fx_vis",true)};
 let actx=null;
 function getCtx(){try{if(!actx){const C=window.AudioContext||window.webkitAudioContext;if(C)actx=new C()}if(actx&&actx.state==="suspended")actx.resume()}catch(e){}return actx}
